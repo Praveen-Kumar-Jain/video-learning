@@ -60,14 +60,31 @@ npm run seed --workspace server
 
 Warning: the seed command clears the application's users, videos, questions, assignments, progress, and responses, then creates fresh demo data.
 
-It creates these accounts:
+It creates 1 admin and 8 learner accounts, all with password `Password123!`:
 
-| Role | Email | Password |
+| Role | Email | Demo state |
 | --- | --- | --- |
-| Admin | `admin@example.com` | `Password123!` |
-| Learner | `learner@example.com` | `Password123!` |
+| Admin | `admin@example.com` | Owns all 6 seeded course videos |
+| Learner | `learner@example.com` | 1 in-progress (mixed answers), 1 completed (all correct), 1 assigned-but-not-started |
+| Learner | `mia.chen@example.com` | 1 completed, all answers correct |
+| Learner | `daniel.osei@example.com` | 2 completed, some answers wrong |
+| Learner | `sofia.garcia@example.com` | 1 in-progress |
+| Learner | `liam.oconnor@example.com` | 1 assigned-but-not-started |
+| Learner | `aisha.khan@example.com` | 1 completed (all correct), 1 in-progress |
+| Learner | `noah.kim@example.com` | 1 completed, some answers wrong |
+| Learner | `emma.rossi@example.com` | No assignments (empty-state demo) |
 
-The seeded lesson uses the public Sintel trailer, which includes an audio track, and pauses at 10 seconds.
+It also creates 6 course videos, each with 2-4 timestamp questions and a real
+answer key (correct option(s) or accepted short answers):
+
+| Course | Duration | Published |
+| --- | ---: | --- |
+| Leadership Fundamentals: Leading with Empathy | 52s | Yes |
+| Data Privacy & Security Basics | 30s | Yes |
+| Effective Email Communication | 15s | Yes |
+| Workplace Safety Essentials | 10s | Yes |
+| Customer Service First Impressions | 10s | Yes |
+| Daily Stand-up Etiquette | 5s | No (draft, to demo the unpublished state) |
 
 ## 4. Start the application
 
@@ -83,6 +100,7 @@ Open these addresses:
 | --- | --- |
 | Frontend | `http://localhost:5173` |
 | API health check | `http://localhost:5000/api/health` |
+| API docs (Swagger UI) | `http://localhost:5000/api/docs` |
 
 The health check must return:
 
@@ -92,12 +110,17 @@ The health check must return:
 
 ## 5. Ready-to-use test videos
 
-Paste one of these **direct MP4 URLs** into the Video URL field. They were checked for an HTTP `200` response and `video/mp4` content type on 2026-09-12.
+The seed script already populates 6 courses with working video URLs (see the
+table above) — you don't need these to explore the seeded data. If you want to
+add another lesson by hand, paste one of these **direct MP4 URLs** into the
+Video URL field. They were checked for an HTTP `200` response and `video/mp4`
+content type on 2026-09-12.
 
 | Video | Direct URL | Suggested duration | Suggested question timestamps |
 | --- | --- | ---: | --- |
 | Short flower clip (no audio) | `https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4` | `5` seconds | `2`, `4` |
 | Sintel trailer | `https://media.w3.org/2010/05/sintel/trailer.mp4` | About `52` seconds | `10`, `25`, `40` |
+| Jellyfish clip | `https://test-videos.co.uk/vids/jellyfish/mp4/h264/360/Jellyfish_360_10s_1MB.mp4` | `10` seconds | `2`, `5`, `8` |
 
 For the duration, use the value displayed by your browser's video controls after it loads. Keep every question timestamp strictly lower than the duration.
 
@@ -105,20 +128,26 @@ For the duration, use the value displayed by your browser's video controls after
 
 ### Admin
 
-1. Log in as `admin@example.com`.
-2. Open **Videos**, choose **New video**, and paste a direct MP4 URL from the table.
-3. Enter title, duration, and optional description/thumbnail, then save.
-4. Open **Questions** for that video.
-5. Add single-choice, multiple-choice, and short-answer questions at valid timestamps.
-6. Return to **Videos** and publish the video.
-7. Open **Assignments**, select the video and `Learner User`, then choose **Assign video**.
-8. Confirm the new assignment is listed.
+1. Log in as `admin@example.com`. Open **Videos** and confirm 6 seeded courses
+   appear, one of them marked `Draft`.
+2. Choose **New video**, paste a direct MP4 URL from the table above, enter a
+   title/duration, and save; then **Edit** it and **Delete** it to confirm both work.
+3. Open **Questions** for a seeded course and confirm each question already has
+   an answer key: **Edit** one, confirm the correct option(s)/accepted answers
+   are preselected, then add a new single-choice question, checking one option
+   as correct, and **Delete** it afterward.
+4. Open **Assignments**, select a published video and a learner, then choose
+   **Assign video**; confirm the new assignment is listed.
+5. Open **Reports**, select a seeded course, and confirm the learner progress
+   table and the graded response table (with correct/incorrect badges) show
+   the seeded demo data.
 
 ### Learner
 
 1. Sign out and log in as `learner@example.com`.
-2. Open **My learning** and start the newly assigned video.
-3. Confirm video playback begins.
+2. Open **My learning** and confirm it shows one in-progress lesson, one
+   completed lesson, and one not-started lesson.
+3. Open the in-progress lesson and confirm it resumes near the saved timestamp.
 4. At a configured timestamp, confirm playback pauses and the quiz appears.
 5. Submit an answer and confirm playback resumes.
 6. Pause the video, refresh the page, and confirm it resumes near the saved point.

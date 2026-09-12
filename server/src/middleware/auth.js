@@ -11,11 +11,14 @@ export async function requireAuth(req, res, next) {
     if (!user) return res.status(401).json({ message: 'User no longer exists' });
     req.user = user;
     next();
-  } catch { res.status(401).json({ message: 'Invalid or expired access token' }); }
+  } catch {
+    res.status(401).json({ message: 'Invalid or expired access token' });
+  }
 }
 
 export function requireRole(...roles) {
-  return (req, res, next) => roles.includes(req.user.role)
-    ? next()
-    : res.status(403).json({ message: 'You do not have permission to perform this action' });
+  return (req, res, next) =>
+    roles.includes(req.user.role)
+      ? next()
+      : res.status(403).json({ message: 'You do not have permission to perform this action' });
 }

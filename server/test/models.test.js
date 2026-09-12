@@ -16,8 +16,19 @@ describe('Mongoose schemas', () => {
     expect(new Response().validateSync().errors).toHaveProperty('questionId');
   });
   it('enforces valid roles, question types, and progress statuses', () => {
-    expect(new User({ name: 'A', email: 'a@example.com', passwordHash: 'hash', role: 'owner' }).validateSync().errors.role).toBeDefined();
-    expect(new Question({ videoId: '507f1f77bcf86cd799439011', timestampSeconds: 1, type: 'essay', prompt: 'Why?' }).validateSync().errors.type).toBeDefined();
-    expect(new Progress({ assignmentId: '507f1f77bcf86cd799439011', status: 'paused' }).validateSync().errors.status).toBeDefined();
+    expect(
+      new User({ name: 'A', email: 'a@example.com', passwordHash: 'hash', role: 'owner' }).validateSync().errors.role,
+    ).toBeDefined();
+    expect(
+      new Question({
+        videoId: '507f1f77bcf86cd799439011',
+        timestampSeconds: 1,
+        type: 'essay',
+        prompt: 'Why?',
+      }).validateSync().errors.type,
+    ).toBeDefined();
+    expect(
+      new Progress({ assignmentId: '507f1f77bcf86cd799439011', status: 'paused' }).validateSync().errors.status,
+    ).toBeDefined();
   });
 });

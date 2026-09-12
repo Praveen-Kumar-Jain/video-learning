@@ -6,5 +6,11 @@ import App from './App.jsx';
 import './styles.css';
 
 createRoot(document.getElementById('root')).render(
-  <React.StrictMode><QueryClientProvider client={new QueryClient()}><BrowserRouter><App /></BrowserRouter></QueryClientProvider></React.StrictMode>,
+  <React.StrictMode>
+    <QueryClientProvider client={new QueryClient()}>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </QueryClientProvider>
+  </React.StrictMode>,
 );

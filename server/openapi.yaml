@@ -1,0 +1,359 @@
+openapi: 3.0.3
+info:
+  title: Video Learning Platform API
+  version: 1.0.0
+  description: >
+    API for a timestamp-based video quiz platform. Admins upload video lessons
+    (by direct URL) and timestamp questions, publish lessons, and assign them
+    to learners. Learners watch assigned lessons, answer questions as playback
+    reaches each timestamp, and their progress and answers are tracked.
+servers:
+  - url: /api
+security:
+  - bearerAuth: []
+tags:
+  - name: Auth
+  - name: Videos
+  - name: Questions
+  - name: Assignments
+  - name: Reports
+  - name: Users
+
+paths:
+  /health:
+    get:
+      tags: [Auth]
+      summary: Health check
+      security: []
+      responses:
+        '200':
+          description: API is up
+          content:
+            application/json:
+              schema: { type: object, properties: { status: { type: string, example: ok } } }
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Sign in with email and password
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, minLength: 8 }
+      responses:
+        '200':
+          description: Signed in
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+                  user: { $ref: '#/components/schemas/User' }
+        '401': { description: Invalid credentials }
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Get the signed-in user's profile
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema: { type: object, properties: { user: { $ref: '#/components/schemas/User' } } }
+
+  /videos:
+    get:
+      tags: [Videos]
+      summary: List videos (all videos for admins; published/assigned videos for learners)
+      responses:
+        '200':
+          description: Video list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { videos: { type: array, items: { $ref: '#/components/schemas/Video' } } }
+    post:
+      tags: [Videos]
+      summary: Create a video (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: '#/components/schemas/VideoInput' } }
+      responses:
+        '201': { description: Created }
+
+  /videos/{videoId}:
+    patch:
+      tags: [Videos]
+      summary: Update a video (admin only)
+      parameters:
+        - { name: videoId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          application/json: { schema: { $ref: '#/components/schemas/VideoInput' } }
+      responses:
+        '200': { description: Updated }
+        '404': { description: Not found }
+    delete:
+      tags: [Videos]
+      summary: Delete a video and its questions/assignments (admin only)
+      parameters:
+        - { name: videoId, in: path, required: true, schema: { type: string } }
+      responses:
+        '204': { description: Deleted }
+        '404': { description: Not found }
+
+  /videos/{videoId}/publish:
+    patch:
+      tags: [Videos]
+      summary: Publish or unpublish a video (admin only)
+      parameters:
+        - { name: videoId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, required: [isPublished], properties: { isPublished: { type: boolean } } }
+      responses:
+        '200': { description: Updated }
+
+  /videos/{videoId}/questions:
+    get:
+      tags: [Questions]
+      summary: List a video's timestamp questions (answer key hidden for learners)
+      parameters:
+        - { name: videoId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Question list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { questions: { type: array, items: { $ref: '#/components/schemas/Question' } } }
+    post:
+      tags: [Questions]
+      summary: Add a timestamp question to a video (admin only)
+      parameters:
+        - { name: videoId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          application/json: { schema: { $ref: '#/components/schemas/QuestionInput' } }
+      responses:
+        '201': { description: Created }
+        '400': { description: Validation failed }
+
+  /videos/questions/{questionId}:
+    patch:
+      tags: [Questions]
+      summary: Update a timestamp question, including its answer key (admin only)
+      parameters:
+        - { name: questionId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          application/json: { schema: { $ref: '#/components/schemas/QuestionInput' } }
+      responses:
+        '200': { description: Updated }
+        '404': { description: Not found }
+    delete:
+      tags: [Questions]
+      summary: Delete a timestamp question (admin only)
+      parameters:
+        - { name: questionId, in: path, required: true, schema: { type: string } }
+      responses:
+        '204': { description: Deleted }
+        '404': { description: Not found }
+
+  /assignments:
+    get:
+      tags: [Assignments]
+      summary: List all assignments (admin only)
+      parameters:
+        - { name: videoId, in: query, required: false, schema: { type: string } }
+      responses:
+        '200': { description: Assignment list }
+    post:
+      tags: [Assignments]
+      summary: Assign a published video to a learner (admin only)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [videoId, learnerId]
+              properties: { videoId: { type: string }, learnerId: { type: string } }
+      responses:
+        '201': { description: Created }
+        '400': { description: Video is not published, or learnerId is not a learner }
+
+  /assignments/{assignmentId}:
+    delete:
+      tags: [Assignments]
+      summary: Remove an assignment (admin only)
+      parameters:
+        - { name: assignmentId, in: path, required: true, schema: { type: string } }
+      responses:
+        '204': { description: Deleted }
+
+  /assignments/me:
+    get:
+      tags: [Assignments]
+      summary: List the signed-in learner's assignments with progress
+      responses:
+        '200': { description: Learner assignment list with progress }
+
+  /assignments/{assignmentId}/play:
+    get:
+      tags: [Assignments]
+      summary: Get the video, sanitized questions, and saved progress for playback
+      parameters:
+        - { name: assignmentId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Playback payload }
+        '404': { description: Assignment not found or video unavailable }
+
+  /assignments/{assignmentId}/progress:
+    patch:
+      tags: [Assignments]
+      summary: Save playback progress for the signed-in learner
+      parameters:
+        - { name: assignmentId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lastWatchedSecond, completionPercentage, status]
+              properties:
+                lastWatchedSecond: { type: number }
+                completionPercentage: { type: number }
+                status: { type: string, enum: [not_started, in_progress, completed] }
+      responses:
+        '200': { description: Progress saved }
+
+  /assignments/{assignmentId}/responses:
+    post:
+      tags: [Assignments]
+      summary: Submit an answer to a timestamp question
+      parameters:
+        - { name: assignmentId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [questionId, answer]
+              properties:
+                questionId: { type: string }
+                answer:
+                  oneOf:
+                    - { type: string }
+                    - { type: array, items: { type: string } }
+      responses:
+        '201': { description: Answer saved }
+        '400': { description: Question does not belong to this video }
+
+  /reports/videos/{videoId}/progress:
+    get:
+      tags: [Reports]
+      summary: Per-learner progress report for a video (admin only)
+      parameters:
+        - { name: videoId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Learner progress list }
+
+  /reports/videos/{videoId}/responses:
+    get:
+      tags: [Reports]
+      summary: Graded response report for a video (admin only)
+      parameters:
+        - { name: videoId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Graded response list with correctness }
+
+  /users/learners:
+    get:
+      tags: [Users]
+      summary: List learner accounts (admin only)
+      responses:
+        '200': { description: Learner list }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    User:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string }
+        role: { type: string, enum: [admin, learner] }
+    Video:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        thumbnailUrl: { type: string }
+        videoUrl: { type: string }
+        durationSeconds: { type: number }
+        isPublished: { type: boolean }
+    VideoInput:
+      type: object
+      required: [title, videoUrl, durationSeconds]
+      properties:
+        title: { type: string }
+        description: { type: string }
+        thumbnailUrl: { type: string }
+        videoUrl: { type: string, format: uri }
+        durationSeconds: { type: number }
+    Question:
+      type: object
+      properties:
+        id: { type: string }
+        videoId: { type: string }
+        timestampSeconds: { type: number }
+        type: { type: string, enum: [single, multiple, short] }
+        prompt: { type: string }
+        options:
+          type: array
+          items:
+            type: object
+            properties: { id: { type: string }, text: { type: string } }
+        correctOptionIds:
+          type: array
+          items: { type: string }
+          description: Admin-only; omitted from the learner-facing question list.
+        acceptedAnswers:
+          type: array
+          items: { type: string }
+          description: Admin-only; omitted from the learner-facing question list.
+    QuestionInput:
+      type: object
+      required: [timestampSeconds, type, prompt]
+      properties:
+        timestampSeconds: { type: number }
+        type: { type: string, enum: [single, multiple, short] }
+        prompt: { type: string }
+        options:
+          type: array
+          items:
+            type: object
+            required: [text]
+            properties: { text: { type: string }, isCorrect: { type: boolean } }
+        acceptedAnswers:
+          type: array
+          items: { type: string }
